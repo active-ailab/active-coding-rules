@@ -1,107 +1,46 @@
 # active-coding-rules
 
-[简体中文说明](README.zh-CN.md)
+`active-coding-rules` 是一个语言无关的 Codex Skill，用于约束编码代理在编写、审查、调试和重构代码时的工作方式。它不提供某种语言或框架的语法规范，而是让代理先理解目标与现有代码，再做满足需求的最小改动，并在完成前建立验证闭环。
 
-`active-coding-rules` is a Codex Skill that turns a small set of practical coding rules into an installable, reusable agent behavior package.
+## 核心原则
 
-Its job is simple: make coding agents slower to assume, faster to verify, and less likely to overengineer or make unrelated edits.
+1. **先思考再编码（Think Before Coding）**：明确目标、约束和预期行为；当歧义会改变实现时显式说明假设、比较合理方案，必要时向用户澄清。
+2. **简单优先（Simplicity First）**：只实现当前需求，不为单次使用提前抽象，也不为假想未来添加配置、灵活性或额外错误处理。
+3. **外科手术式修改（Surgical Changes）**：沿用仓库已有的命名、辅助函数、风格和目录组织，只修改任务要求的内容；不顺手重构、格式化或清理相邻代码，并把未提交改动视为用户所有。
+4. **目标驱动执行（Goal-Driven Execution）**：把任务转换为可观察的成功标准。修复缺陷时先复现失败或定义失败行为，重构时验证行为保持不变，多步骤任务为每一步配套检查。
 
-This repository packages Karpathy-inspired coding guardrails into a structure that can be installed under a Codex skills directory and used directly in day-to-day coding work.
+默认工作循环是：明确目标 → 检查本地代码 → 暴露关键假设 → 实施最小改动 → 运行最相关的测试、构建、lint 或手工检查 → 汇报改动、验证结果与剩余风险。代码审查模式要求先按严重程度列出具体发现，给出文件和行号并解释影响，摘要放在次要位置。
 
-## What This Skill Does
+## 适用范围
 
-This skill pushes the agent toward four behaviors:
+该 Skill 可用于 bug 修复、行为保持型重构、复杂问题调试、代码审查、小到中等功能开发以及强调验证质量的任务。它适用于 Python、TypeScript、JavaScript、Go、Rust、Java、C 和 C++ 等语言，但不能替代语言、框架或平台自己的构建、静态分析、安全及发布规范；例如 C/C++ 项目仍应使用项目既有构建系统、编译器告警、测试、sanitizer 和格式化工具。
 
-- **Think Before Coding**: surface assumptions and ambiguity before implementation.
-- **Simplicity First**: solve the current problem with the minimum code necessary.
-- **Surgical Changes**: keep diffs narrow and avoid drive-by refactors.
-- **Goal-Driven Execution**: define success criteria and verify with the tightest relevant check.
+## 安装
 
-In practice, this means the agent is more likely to:
-
-- inspect local code before proposing a solution
-- ask or state assumptions when ambiguity changes behavior
-- avoid speculative abstractions and unnecessary flexibility
-- make smaller, more reviewable edits
-- run focused validation instead of declaring success too early
-- produce better code reviews with concrete findings and verification notes
-
-## Who This Is For
-
-Use this skill if you want your coding agent to behave more like a disciplined senior engineer and less like an autocomplete engine.
-
-It is especially useful when you care about:
-
-- keeping PRs small and easy to review
-- reducing hidden assumptions in implementation
-- preventing unnecessary rewrites and refactors
-- forcing clearer verification after each change
-- making code review output concrete and actionable
-
-## Language Coverage
-
-This is a **language-agnostic behavior skill**.
-
-It works well with Python, TypeScript, JavaScript, Go, Rust, Java, C, and C++ because it changes how the agent works, not just what syntax it writes.
-
-For C and C++, this skill is helpful, but it is **not** a replacement for language-specific engineering rules. You should still pair it with your normal toolchain and checks, such as:
-
-- CMake, Ninja, Make, or your existing build system
-- compiler warnings and standard version flags
-- unit tests and integration tests
-- sanitizers such as ASan and UBSan
-- static analysis and formatting rules used by your project
-
-## Quick Start
-
-### 1. Clone or download this repository
-
-Put the repository anywhere you want to maintain it locally.
-
-### 2. Install the skill with the provided script
-
-The repository includes an `install.sh` helper that creates a symlink named `active-coding-rules` inside your Codex skills parent directory.
-
-Example:
+仓库提供 `install.sh`，通过软链接把 `active-coding-rules/` 安装到指定的 Codex skills **父目录**：
 
 ```bash
 chmod +x install.sh
 ./install.sh -path "$HOME/.codex/skills"
 ```
 
-Important:
+脚本会创建 `$HOME/.codex/skills/active-coding-rules`。不要把最终 Skill 名追加到 `-path` 参数。若链接已正确指向当前仓库，脚本会提示已安装并成功退出；若目标指向别处，或目标是普通文件/目录，则会报错而不覆盖。由于使用软链接，修改仓库内 Skill 文件后通常无需重新安装。
 
-- pass the **parent directory** of your skills folder
-- do **not** append `/active-coding-rules` yourself
-- the script will create the symlink for you
-
-For example, if your skills are normally installed under:
-
-```bash
-$HOME/.codex/skills/
-```
-
-then the correct command is:
-
-```bash
-./install.sh -path "$HOME/.codex/skills"
-```
-
-### 3. Verify the install
-
-You should see a symlink like this under your skills directory:
+验证链接：
 
 ```bash
 ls -l "$HOME/.codex/skills/active-coding-rules"
 ```
 
-If the skill is already installed and points to the same source directory, the installer exits cleanly and reports that it is already installed.
+卸载只需删除链接，不会删除仓库：
 
-## How To Use It
+```bash
+rm -f "$HOME/.codex/skills/active-coding-rules"
+```
 
-In environments that support explicit skill invocation, reference the skill directly in your prompt.
+## 使用示例
 
-Examples:
+在支持显式 Skill 调用的环境中，可以在任务前引用：
 
 ```text
 $active-coding-rules fix the failing test in src/parser.cpp and verify with the narrowest command.
@@ -112,128 +51,31 @@ $active-coding-rules review this patch and list concrete findings ordered by sev
 ```
 
 ```text
-$active-coding-rules refactor this function without changing behavior, then tell me exactly what you verified.
-```
-
-```text
 $active-coding-rules debug this crash, reproduce it first, make the smallest fix, and avoid unrelated cleanup.
 ```
 
-## What Behavior To Expect
-
-After applying this skill, the agent should tend to follow a loop like this:
-
-1. Clarify the goal, constraints, and expected behavior.
-2. Inspect the local code before deciding on an approach.
-3. State meaningful assumptions when ambiguity affects implementation.
-4. Make the smallest change that satisfies the request.
-5. Verify with the most relevant test, build, lint, or manual check.
-6. Report what changed, what was verified, and any remaining risk.
-
-That leads to a few practical changes in day-to-day use:
-
-- fewer big speculative rewrites
-- fewer hidden assumptions
-- fewer “done” claims without validation
-- smaller diffs with clearer intent
-- better review output with more actionable findings
-
-## When To Use It
-
-This skill is a strong default for:
-
-- bug fixes
-- refactors that must preserve behavior
-- debugging ambiguous failures
-- code reviews
-- small and medium scoped feature work
-- tasks where verification quality matters as much as implementation speed
-
-It is less useful as the only guidance for:
-
-- language-specific architecture decisions
-- framework-specific conventions
-- platform-specific build and release workflows
-- specialized domains that need their own detailed policy
-
-## Repository Structure
+## 仓库结构
 
 ```text
 .
 ├── README.md
+├── README.zh-CN.md
+├── MATT_SKILLS_INTEGRATION_REPORT.md
 ├── install.sh
 └── active-coding-rules/
-	├── SKILL.md
-	├── agents/
-	│   └── openai.yaml
-	└── references/
-		├── core-rules.md
-		└── karpathy-examples.md
+    ├── SKILL.md
+    ├── agents/
+    │   └── openai.yaml
+    └── references/
+        ├── core-rules.md
+        ├── karpathy-examples.md
+        └── matt-pocock-skills-lessons.md
 ```
 
-Key files:
+- `SKILL.md`：触发说明、六步运行循环、四项核心原则和审查模式。
+- `core-rules.md`：非平凡或多文件任务使用的扩展检查清单，包括编辑前检查、验证策略和最终报告要求。
+- `karpathy-examples.md`：以导出用户、搜索优化、折扣计算、空邮箱修复、日志添加、认证与限流等正反例校准四项原则。
+- `matt-pocock-skills-lessons.md`：用于演进本 Skill 或处理复杂诊断、TDD、架构、原型、规划和长期任务说明时参考的渐进式披露与工作流经验；它明确建议保持主 Skill 简短，而不是把所有流程塞入主文件。
+- `agents/openai.yaml`：声明显示名称、简短说明和默认调用提示。
 
-- `active-coding-rules/SKILL.md`: the main skill definition and operating instructions
-- `active-coding-rules/references/core-rules.md`: expanded checklist for non-trivial coding tasks
-- `active-coding-rules/references/karpathy-examples.md`: examples and anti-patterns that calibrate expected behavior
-- `install.sh`: installation helper that creates the symlink into your skills directory
-
-## Local Development
-
-Because installation uses a symlink, changes you make in this repository are reflected immediately in the installed skill.
-
-That means you usually do **not** need to reinstall after editing the skill files, unless you delete or move the symlink.
-
-## Validate The Skill
-
-If your local Codex setup includes the validator script, you can run:
-
-```bash
-python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" active-coding-rules
-```
-
-If your validator is installed in a different location, adjust the path accordingly.
-
-## Uninstall
-
-To remove the installed skill, delete the symlink from your skills directory:
-
-```bash
-rm -f "$HOME/.codex/skills/active-coding-rules"
-```
-
-This removes only the installed link, not the repository itself.
-
-## FAQ
-
-### Do I pass the final skill directory or the parent directory?
-
-Pass the parent directory.
-
-Correct:
-
-```bash
-./install.sh -path "$HOME/.codex/skills"
-```
-
-Incorrect:
-
-```bash
-./install.sh -path "$HOME/.codex/skills/active-coding-rules"
-```
-
-### Do I need to reinstall after changing the skill files?
-
-Usually no. The installed entry is a symlink to this repository.
-
-### What happens if the target already exists?
-
-- if the existing symlink already points to this repository, installation succeeds with an “already installed” message
-- if the target points somewhere else, the script exits with an error
-- if a normal file or directory already exists at that path, the script exits with an error
-
-## Source And Intent
-
-This repository ports the reusable guidance from the local `andrej-karpathy-skills` project into a Codex Skill structure while intentionally leaving out Claude/Cursor-specific installation files and nested `.git` data.
-
-The goal is not to create a large framework. The goal is to create a small, reusable operating discipline for coding agents.
+如本地 Codex 安装包含 Skill 校验脚本，可按实际路径运行 `quick_validate.py active-coding-rules`。
