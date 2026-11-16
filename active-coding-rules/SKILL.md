@@ -59,6 +59,12 @@ Turn the task into verifiable success criteria and loop until they are met.
 - "Refactor" means preserve behavior and verify before and after when practical.
 - For multi-step work, pair every step with its verification check.
 
+## 代码注释偏好
+
+- 新增或修改非测试代码的注释时，使用中文 Doxygen 格式（`/** ... */`）；根据需要填写 `@brief`、`@param`、`@return`、`@details`、`@note`，不添加与代码无关的模板内容。
+- 测试代码的注释不强制使用 Doxygen 格式，按测试需要和现有风格编写。
+- 仅对本次新增或修改的注释应用上述偏好，不批量转换未涉及的历史注释。
+
 ## Review Mode
 
 When reviewing code, lead with concrete findings ordered by severity. Include file and line references, explain the impact, and keep summaries secondary.
